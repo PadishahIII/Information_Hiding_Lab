@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 from random import random
@@ -51,19 +52,42 @@ def encode(path, new_path, data):
             B_byte = pixel[2]
             R_bit = bin(R_byte).replace('0b', '')
             R_bit = ReplaceLastBit(R_bit, data[count])
-            #rand_bit = 0 if random() > 0.5 else 1
-            #if (R_byte % 2 == 0):
-            #    if (rand_bit == 1):
-            #        R_byte += 1
-            #else:
-            #    if (rand_bit == 0):
-            #        R_byte -= 1
             im.putpixel((w, h), (int(R_bit, 2), G_byte, B_byte))
-            #im.putpixel((w, h), (R_byte, G_byte, B_byte))
             count += 1
             if (count >= len(data)):  #已经嵌入所有信息
                 im.save(new_path)
                 return True
+    im.save(new_path)
+    return True
+
+
+# random_rate:随机率，每八个bit中随机比特的个数
+# 除了随机的比特，其它比特都为1
+def encode_random(path, new_path, random_rate):
+    im = Image.open(path)
+    width = im.size[0]
+    height = im.size[1]
+    data = ''
+    for i in range(0, width * height, 8):
+        for ii in range(i, i + random_rate):
+            data += '0' if random() > 0.5 else '1'
+        for ii in range(i + random_rate, i + 8):
+            data += '1'
+    count = 0
+    for w in range(width):  # 纵向嵌入
+        for h in range(height):
+            pixel = im.getpixel((w, h))
+            R_byte = pixel[0]
+            G_byte = pixel[1]
+            B_byte = pixel[2]
+            if (R_byte % 2 == 0):
+                if (data[count] == '1'):
+                    R_byte += 1
+            else:
+                if (data[count] == '0'):
+                    R_byte -= 1
+            im.putpixel((w, h), (R_byte, G_byte, B_byte))
+            count += 1
     im.save(new_path)
     return True
 
@@ -218,6 +242,7 @@ def RS(im):
     print("Rm_:" + str(Rm_))
     print("Sm:" + str(Sm))
     print("Sm_:" + str(Sm_))
+    return Rm, Rm_, Sm, Sm_
 
 
 def LSB():
@@ -235,6 +260,15 @@ def LSB():
     decode(new_path)
 
 
+def LSB_random():
+    path = "1.bmp"
+    random_rate = int(input("Input random rate:(0-8)"))
+    while (random_rate not in range(0, 9)):
+        random_rate = input("Invail,input again:(0-8)")
+    new_path = "random" + str(random_rate) + ".bmp"
+    encode_random(path, new_path, random_rate)
+
+
 def _RS_():
     path1 = input("RS Analyze\nInput path1:")
     while (os.path.exists(path1) == False):
@@ -250,10 +284,38 @@ def _RS_():
     RS(im2)
 
 
+def RS_show():
+    Rm = []
+    Rm_ = []
+    Sm = []
+    Sm_ = []
+    for i in range(2, 8):
+        path = 'random' + str(i) + '.bmp'
+        print("******************\n" + path)
+        rm, rm_, sm, sm_ = RS(Image.open(path))
+        Rm += [rm]
+        Rm_ += [rm_]
+        Sm += [sm]
+        Sm_ += [sm_]
+    random_list = []
+    for i in range(2, 8):
+        random_list += [str(i / 8)[0:5]]
+    plt.figure(figsize=(20, 10), dpi=100)
+    plt.plot(random_list, Rm, c='red', linestyle='--', label='R+')
+    plt.plot(random_list, Rm_, c='red', label='R-')
+    plt.plot(random_list, Sm, c='blue', linestyle='--', label='S+')
+    plt.plot(random_list, Sm_, c='blue', label='S-')
+    plt.legend(loc='best')
+    plt.show()
+
+
 if __name__ == "__main__":
     #file = open("txt", "w")
     #for i in range(512 * 512 // 8):
     #    file.write('~')
     #file.close()
     #LSB()
-    _RS_()
+    #while (True):
+    #LSB_random()
+    #_RS_()
+    RS_show()
