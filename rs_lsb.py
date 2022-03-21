@@ -92,6 +92,38 @@ def encode_random(path, new_path, random_rate):
     return True
 
 
+# random_rate:随机率，嵌入秘密信息的像素数目所占比例
+# 除了随机的比特，其它比特都为1
+def encode_random_2(path, new_path, random_rate):
+    im = Image.open(path)
+    width = im.size[0]
+    height = im.size[1]
+    max_len = width * height * random_rate
+    data = ''
+    for i in range(0, max_len):
+        data += '0' if random() > 0.5 else '1'
+    count = 0
+    for w in range(width):  # 纵向嵌入
+        for h in range(height):
+            pixel = im.getpixel((w, h))
+            R_byte = pixel[0]
+            G_byte = pixel[1]
+            B_byte = pixel[2]
+            if (R_byte % 2 == 0):
+                if (data[count] == '1'):
+                    R_byte += 1
+            else:
+                if (data[count] == '0'):
+                    R_byte -= 1
+            im.putpixel((w, h), (R_byte, G_byte, B_byte))
+            count += 1
+            if (count > max_len):
+                im.save(new_path)
+                return True
+    im.save(new_path)
+    return True
+
+
 def decode(path):
     im = Image.open(path)
     width = im.size[0]
@@ -228,11 +260,11 @@ def RS(im):
     for i in range(len(init_correlation_list)):
         if non_neg_correlation_list[i] > init_correlation_list[i]:
             count_non_neg_R += 1
-        else:
+        elif non_neg_correlation_list[i] < init_correlation_list[i]:
             count_non_neg_S += 1
         if non_pos_correlation_list[i] > init_correlation_list[i]:
             count_non_pos_R += 1
-        else:
+        elif non_pos_correlation_list[i] < init_correlation_list[i]:
             count_non_pos_S += 1
     Rm = count_non_neg_R / num
     Rm_ = count_non_pos_R / num
@@ -250,9 +282,9 @@ def LSB():
     while (os.path.exists(path) == False):
         path = input(path + " does not exists , please input again:")
     new_path = input("Input save path:")
-    #data = input("Input message to insert:")
-    file = open("txt", "r")
-    data = file.read()
+    data = input("Input message to insert:")
+    #file = open("txt", "r")
+    #data = file.read()
     while (encode(path, new_path, data) == False):
         data = input("Input message:")
     print("New image saved to:" + new_path)
@@ -261,12 +293,21 @@ def LSB():
 
 
 def LSB_random():
-    path = "1.bmp"
+    path = "raw.bmp"
     random_rate = int(input("Input random rate:(0-8)"))
     while (random_rate not in range(0, 9)):
         random_rate = input("Invail,input again:(0-8)")
     new_path = "random" + str(random_rate) + ".bmp"
     encode_random(path, new_path, random_rate)
+
+
+def LSB_random_2():
+    path = "1.bmp"
+    random_rate = int(input("Input random rate:(0-8)"))
+    while (random_rate not in range(0, 9)):
+        random_rate = input("Invail,input again:(0-8)")
+    new_path = "random_" + str(random_rate) + ".bmp"
+    encode_random_2(path, new_path, random_rate)
 
 
 def _RS_():
@@ -289,7 +330,7 @@ def RS_show():
     Rm_ = []
     Sm = []
     Sm_ = []
-    for i in range(2, 8):
+    for i in range(0, 9):
         path = 'random' + str(i) + '.bmp'
         print("******************\n" + path)
         rm, rm_, sm, sm_ = RS(Image.open(path))
@@ -298,7 +339,7 @@ def RS_show():
         Sm += [sm]
         Sm_ += [sm_]
     random_list = []
-    for i in range(2, 8):
+    for i in range(0, 9):
         random_list += [str(i / 8)[0:5]]
     plt.figure(figsize=(20, 10), dpi=100)
     plt.plot(random_list, Rm, c='red', linestyle='--', label='R+')
@@ -314,8 +355,9 @@ if __name__ == "__main__":
     #for i in range(512 * 512 // 8):
     #    file.write('~')
     #file.close()
-    #LSB()
+    LSB()  #用户输入秘密信息
     #while (True):
-    #LSB_random()
-    #_RS_()
-    RS_show()
+    #LSB_random()  #第一种方式的随机嵌入
+    #LSB_random_2()  #第二种方式的随机嵌入
+    #_RS_()  #比较两张图像的Rm
+    #RS_show()  #使用随机嵌入的图像
