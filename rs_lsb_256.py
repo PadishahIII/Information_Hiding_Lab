@@ -39,6 +39,48 @@ def BittoString(bitstr):
         for j in range(i))
 
 
+def encode_random(path, new_path, random_rate):
+    im = Image.open(path)
+    width = im.size[0]
+    height = im.size[1]
+    max_len = width * height
+    data = ''
+    for i in range(0, max_len):
+        data += '0' if random() > 0.5 else '1'
+    pos = ''
+    for i in range(0, max_len):
+        pos += '1' if int(1e8 * random()) % rate_list[random_rate -
+                                                      1] == 0 else '0'
+    count = 0
+    for w in range(width):  # 纵向嵌入
+        for h in range(height):
+            pixel = im.getpixel((w, h))
+            if (pos[count] == '1'):
+                if (pixel % 2 == 0):
+                    if (data[count] == '1'):
+                        pixel += 1
+                else:
+                    if (data[count] == '0'):
+                        pixel -= 1
+            im.putpixel((w, h), pixel)
+            count += 1
+            if (count > max_len):
+                im.save(new_path)
+                return True
+    im.save(new_path)
+    return True
+
+
+def LSB_random():
+    path = "lena_gray.bmp"
+    random_rate = int(input("Input random rate:(1-6)"))
+    while (random_rate not in range(0, 1.1)):
+        random_rate = input("Invail,input again:(1-6)")
+    #new_path = "new" + str(random_rate) + ".bmp"
+    new_path = input("path:")
+    encode_random(path, new_path, random_rate)
+
+
 # 非负翻转
 def Non_negative_evert(im_old):
     im = Image.new(mode="L", size=[im_old.size[0], im_old.size[1]])
@@ -196,7 +238,8 @@ def RS_show():
     Sm = []
     Sm_ = []
     for i in range(0, 6):
-        path = str(int(pow(2, i))) + '.bmp'
+        path = str(pow(2, i)) + '.bmp'
+        #path = "new" + i + '.bmp'
         print("******************\n" + path)
         rm, rm_, sm, sm_ = RS(Image.open(path))
         Rm += [rm]
@@ -205,7 +248,34 @@ def RS_show():
         Sm_ += [sm_]
     random_list = []
     for i in range(0, 6):
+        #random_list += [str(1 / pow(2, i))[0:5]]
         random_list += [str(1 / pow(2, i))[0:5]]
+
+    plt.figure(figsize=(20, 10), dpi=100)
+    plt.plot(random_list, Rm, c='red', linestyle='--', label='R+')
+    plt.plot(random_list, Rm_, c='red', label='R-')
+    plt.plot(random_list, Sm, c='blue', linestyle='--', label='S+')
+    plt.plot(random_list, Sm_, c='blue', label='S-')
+    plt.legend(loc='best')
+    plt.show()
+
+
+#0 0.2 0.4 0.6 0.8 1
+def RS_show__():
+    Rm = []
+    Rm_ = []
+    Sm = []
+    Sm_ = []
+    for i in range(0, 6):
+        #path = str(pow(2, i)) + '.bmp'
+        path = str(i) + '-5.bmp'
+        print("******************\n" + path)
+        rm, rm_, sm, sm_ = RS(Image.open(path))
+        Rm += [rm]
+        Rm_ += [rm_]
+        Sm += [sm]
+        Sm_ += [sm_]
+    random_list = [0, 0.2, 0.4, 0.6, 0.8, 1]
     plt.figure(figsize=(20, 10), dpi=100)
     plt.plot(random_list, Rm, c='red', linestyle='--', label='R+')
     plt.plot(random_list, Rm_, c='red', label='R-')
@@ -263,4 +333,4 @@ if __name__ == "__main__":
     #LSB_random_3()
     #_RS_()  #比较两张图像的Rm
     #RS_show()  #使用随机嵌入的图像
-    RS_show_()
+    RS_show__()
